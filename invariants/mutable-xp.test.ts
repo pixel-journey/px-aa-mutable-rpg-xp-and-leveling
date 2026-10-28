@@ -49,6 +49,10 @@ test("negative gain is refused", () => {
   assert.throws(() => applyGain(editor, editor, chain(row), -1), /bad gain/);
 });
 
+test("non-integer gain is refused", () => {
+  assert.throws(() => applyGain(editor, editor, chain(row), 1.5), /bad gain/);
+});
+
 test("uint32 xp is refused at the cap", () => {
   const near = { xp: 0xffffffff - 5, level: expectedLevel(0xffffffff - 5), durability: 3, nickname: "oak" };
   assert.throws(() => applyGain(editor, editor, chain(near), 6), /xp cap/);
