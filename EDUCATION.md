@@ -1,26 +1,42 @@
 # Education
 
-Quest 025. The tested rule is the full-map mutate step before `atomicassets::setassetdata`.
+Example of a safe mutable-data update for an AtomicAssets NFT before calling `setassetdata`.
 
-## The pitfall
+## Why the full map must be written
 
-`setassetdata` replaces the stored mutable map with the map you send. A map that contains only the keys you changed drops every other key. That is the wipe.
+`setassetdata` replaces the entire stored mutable map with the map you supply. If you send only the keys you intend to change, every other key is erased. That is a silent data-loss bug. The tested rule demonstrates both the correct full-map result and the wipe that occurs with a partial map.
 
-## The rule that was executed
+## Authorization
 
-- Starting map: xp 50, level 1, durability 10, nickname oak.
-- Gain 50 → xp 100, level 2, durability 9, nickname oak.
-- Level must already be `1 + floor(xp / 100)`. A mismatch is refused.
-- Durability 0 is refused.
-- A partial map that omits nickname does not contain nickname.
-- A new key is refused.
+On chain the caller must be authorized to edit the asset (typically the collection author or the asset owner with the appropriate secondary permission). This repository does not yet implement that check because it does not read the asset row. A production contract must:
 
-`npm test` runs that rule. It does not read an asset and it does not call `setassetdata`.
+- Read the asset from the `atomicassets` table.
+- Confirm the caller is allowed to edit it.
+- Deserialize the existing mutable data.
+- Mutate only the intended keys.
+- Write the complete map back.
 
-## What a contract must do
+Never accept a caller-supplied previous map. The previous state must come from the chain.
 
-On chain the previous map must come from the asset row, not from the caller. The AtomicAssets byte deserializer is not in this repository. Do not deploy a contract that trusts the user for previous state.
+## Bounds and negative inputs
 
-## Sketch
+The tested rule refuses:
 
-`contracts/src/px_mutable_engine.cpp` is uncompiled. It disagrees with the test in places. The test is the rule.
+- A gain of 0 or a negative gain.
+- A gain large enough to push xp outside uint32.
+- A durability that would go negative.
+- A level that does not already match the formula derived from the current xp.
+
+These refusals exist so that a malicious or mistaken caller cannot wrap a counter, create an inconsistent level, or drive durability below zero.
+
+## What is not yet done
+
+The AtomicAssets deserializer and the actual `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled and disagrees with the test in places. The test is the rule until a deterministic build exists.
+
+## Attack surface to keep closed
+
+- Partial map writes (data wipe).
+- Caller-controlled previous state (forged xp/level).
+- Missing authorization on the editor.
+- Unchecked arithmetic on xp or durability.
+- Adding keys that the schema does not declare.
