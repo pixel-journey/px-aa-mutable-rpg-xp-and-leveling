@@ -38,6 +38,7 @@ No host is called.
 - `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
 - `PRODUCTION-SEQUENCE.md` — required order of operations.
 - `PRODUCTION-CHECKLIST.md` — what must still be present before deployment.
+- `PLACEHOLDERS.md` — why the sketch uses placeholder types.
 
 ## Uncompiled sketch
 
