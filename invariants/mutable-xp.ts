@@ -4,6 +4,11 @@ export const UINT32_MAX = 0xffffffff;
 
 export type MutableMap = Record<string, string | number>;
 
+export type ChainPrevious = {
+  source: "chain";
+  map: MutableMap;
+};
+
 function uint32(value: string | number, label: string): number {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > UINT32_MAX) {
     throw new Error("bad " + label);
@@ -36,19 +41,20 @@ export function wipedMap(updates: MutableMap): MutableMap {
 export function applyGain(
   caller: string,
   authorizedEditor: string,
-  previous: MutableMap,
+  previous: ChainPrevious,
   gain: number
 ): MutableMap {
   if (caller !== authorizedEditor) throw new Error("not authorized editor");
+  if (previous.source !== "chain") throw new Error("previous must come from chain");
   if (!Number.isInteger(gain) || gain < 1 || gain > XP_GAIN_MAX) throw new Error("bad gain");
-  const xp = uint32(previous.xp, "xp");
-  const level = uint32(previous.level, "level");
-  const durability = uint32(previous.durability, "durability");
+  const xp = uint32(previous.map.xp, "xp");
+  const level = uint32(previous.map.level, "level");
+  const durability = uint32(previous.map.durability, "durability");
   if (level !== expectedLevel(xp)) throw new Error("level mismatch");
   if (durability < 1) throw new Error("broken");
   if (xp > UINT32_MAX - gain) throw new Error("xp cap");
   const nextXp = xp + gain;
-  return mergeMutable(previous, {
+  return mergeMutable(previous.map, {
     xp: nextXp,
     level: expectedLevel(nextXp),
     durability: durability - 1,
