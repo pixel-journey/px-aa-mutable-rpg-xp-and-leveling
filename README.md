@@ -14,10 +14,11 @@ The tested rule is `invariants/mutable-xp.ts`.
 - Level must already be `1 + floor(xp / 100)`. A mismatch is refused.
 - Durability 0 is refused. One gain subtracts 1.
 - Gain is an integer from 1 to 10000. Negative or non-integer gain is refused. xp must stay inside uint32.
+- A string stored where `xp`, `level`, or `durability` must be a uint32 is refused before arithmetic.
 - A map that contains only the changed keys does not contain `nickname`. That is the wipe.
 - A new key is refused.
 
-On a contract the previous map must come from the asset row, not from the caller. That read and the AtomicAssets deserializer are not in this repository. The `source: "chain"` marker is an educational stand-in for the read.
+On a contract the previous map must come from the asset row, not from the caller. That read and the AtomicAssets deserializer are not in this repository. The `source: "chain"` marker is an educational stand-in for the read. `requireUint32` is the stand-in for `holds_alternative` before `std::get`.
 
 ## Run
 
@@ -33,6 +34,7 @@ No host is called.
 - `SECURITY.md` — authorization and bounds.
 - `WIPE-BUG.md` — why a partial map erases sibling keys.
 - `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
+- `TYPE-CHECK.md` — why a string must not be read as a uint32.
 - `COLLECTION-AUTH.md` — collection editor requirement.
 - `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
 - `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
