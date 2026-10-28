@@ -41,4 +41,4 @@ No host is called.
 
 ## Uncompiled sketch
 
-`contracts/src/px_mutable_engine.cpp` is uncompiled. The gain cap and the fixed durability cost of 1 now match the tested rule. It still lacks the asset-row read, the deserializer, the collection-editor check, and the `setassetdata` call. The test is the rule. Do not treat the file as the integration.
+`contracts/src/px_mutable_engine.cpp` is uncompiled. It now shows the structure of the asset-row read, the schema read, the deserialize step, the collection-editor check, the level-consistency check, and the full-map `setassetdata` call. The real AtomicAssets headers are not vendored. A deterministic CDT build has not been run. The test is the rule. Do not treat the file as the integration.
