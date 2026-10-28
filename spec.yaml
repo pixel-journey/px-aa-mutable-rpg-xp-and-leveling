@@ -6,5 +6,5 @@ not_run: [chain read, setassetdata broadcast, cdt-cpp, deserialize]
 action: atomicassets::setassetdata
 abi_source: wax.greymass.com get_abi atomicassets on 2026-10-27
 fields: [authorized_editor, asset_owner, asset_id, new_mutable_data]
-rule: gain 1..10000; level = 1 + floor(xp / 100); durability -= 1; other keys stay
-anti_pattern: a map of only the changed keys drops the rest
+rule: caller must be the editor; previous.source must be chain; gain 1..10000 integer; level = 1 + floor(xp / 100); durability -= 1; uint32 fields refuse strings; other keys stay
+anti_pattern: a map of only the changed keys drops the rest; stamping source chain without a read hides a forgery

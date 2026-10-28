@@ -1,4 +1,4 @@
-import { applyGain, type MutableMap } from "../invariants/mutable-xp.ts";
+import { applyGain, type ChainPrevious, type MutableMap } from "../invariants/mutable-xp.ts";
 
 export type AttrType = "uint32" | "string";
 
@@ -41,7 +41,7 @@ export function toAttributeMap(full: MutableMap, types: Record<string, AttrType>
   });
 }
 
-const SCHEMA: Record<string, AttrType> = {
+export const SCHEMA: Record<string, AttrType> = {
   xp: "uint32",
   level: "uint32",
   durability: "uint32",
@@ -50,21 +50,25 @@ const SCHEMA: Record<string, AttrType> = {
 
 /**
  * Unsigned atomicassets::setassetdata body.
- * WAX atomicassets 2.0.0 takes authorized_editor, asset_owner, asset_id, new_mutable_data.
- * The action replaces the stored map with this array. This function does not read the chain and does not broadcast.
+ * WAX atomicassets takes authorized_editor, asset_owner, asset_id, new_mutable_data.
+ * The action replaces the stored map with this array.
+ * This function does not read the chain and does not broadcast.
+ * previous.source must already be "chain". This function will not stamp that marker.
  */
 export function gainAction(args: {
+  caller: string;
   authorizedEditor: string;
   assetOwner: string;
   assetId: string;
-  previous: MutableMap;
+  previous: ChainPrevious;
   gain: number;
   types?: Record<string, AttrType>;
 }): Action {
+  assertName(args.caller);
   assertName(args.authorizedEditor);
   assertName(args.assetOwner);
   if (!/^[1-9][0-9]{0,19}$/.test(args.assetId)) throw new Error("bad asset id");
-  const full = applyGain(args.previous, args.gain);
+  const full = applyGain(args.caller, args.authorizedEditor, args.previous, args.gain);
   return {
     account: "atomicassets",
     name: "setassetdata",

@@ -6,6 +6,7 @@ using namespace eosio;
 
 // Educational sketch for a safe AtomicAssets mutable update.
 // Tested rule: invariants/mutable-xp.ts (npm test).
+// Unsigned action body: client/setassetdata-action.ts (same rule).
 // This file has not been compiled. It has not been shown to match the test.
 // The real atomicassets.hpp and atomicdata.hpp are not vendored here.
 // Do not deploy.
@@ -14,9 +15,11 @@ using namespace eosio;
 //   setassetdata replaces the entire stored map. A map that contains only
 //   the keys you changed erases every other key.
 //
-// This sketch now shows the structure of the remaining production steps.
+// This sketch shows the structure of the production steps.
 // It still cannot be compiled until the AtomicAssets headers are present
 // and a deterministic CDT build is run.
+// There is no caller-supplied durability_cost. The tested rule always subtracts 1.
+// xp, level, and durability are uint32 in the tested rule. Do not narrow them to uint16.
 
 // Placeholder types. Real code uses the types from atomicassets.hpp.
 struct asset_row_placeholder {
@@ -34,57 +37,44 @@ CONTRACT px_mutable_engine : public contract {
 public:
     using contract::contract;
 
-    // Gain is fixed at the tested maximum of 10000.
-    // Durability always decreases by 1.
     [[eosio::action]]
     void questcomplete(name asset_owner, uint64_t asset_id, uint32_t xp_gained) {
-        // 1. Authenticate.
         require_auth(asset_owner);
         check(xp_gained >= 1 && xp_gained <= 10000, "bad gain");
 
-        // 2. Collection editor check (structure only).
-        // Production: read the collection's authorized_accounts and confirm
-        // the caller is listed or holds the correct secondary permission.
+        // Collection editor check is not implemented.
         // check(is_authorized_editor(collection_name, get_self()), "not editor");
 
-        // 3. Asset-row read (structure only).
-        // Production: assets table scoped by asset_owner on atomicassets.
+        // Asset-row read is not implemented. Do not substitute zeros and call that a read.
         // const auto& asset = assets.get(asset_id, "asset not found");
-
-        // 4. Schema read (structure only).
-        // Production: schemas table scoped by collection_name.
         // const auto& schema = schemas.get(asset.schema_name.value, "schema not found");
+        // ATTRIBUTE_MAP mdata = atomicdata::deserialize(asset.mutable_serialized_data, schema.format);
+        //
+        // Before arithmetic, each numeric key must be the uint32 alternative:
+        //   check(holds_alternative<uint32_t>(mdata["xp"]), "bad xp");
+        // A string must not be coerced. Nickname stays a string and is copied through.
 
-        // 5. Deserialize (structure only).
-        // Production:
-        // ATTRIBUTE_MAP mdata = atomicdata::deserialize(
-        //   asset.mutable_serialized_data, schema.format);
-
-        // Placeholder values. Real code must read these from the deserialized map.
-        uint32_t current_xp = 0;
-        uint16_t current_level = 1;
-        uint16_t durability = 100;
-
-        // 6. Level-consistency check (matches the tested rule).
-        uint16_t expected = static_cast<uint16_t>(1 + (current_xp / 100));
-        check(current_level == expected, "level mismatch");
-
-        // 7. Apply gain.
+        // The values below are not a chain row. The level check on them is not a demonstration.
+        // Delete this block when the deserialize above is real.
+        const uint32_t current_xp = 0;
+        const uint32_t current_level = 1;
+        const uint32_t durability = 100;
+        check(current_level == 1u + (current_xp / 100u), "level mismatch");
         check(durability >= 1, "broken");
-        durability = static_cast<uint16_t>(durability - 1);
-        current_xp += xp_gained;
-        uint16_t new_level = static_cast<uint16_t>(1 + (current_xp / 100));
+        const uint32_t next_durability = durability - 1;
+        const uint32_t next_xp = current_xp + xp_gained;
+        const uint32_t next_level = 1u + (next_xp / 100u);
 
-        // 8. Full-map write (structure only).
-        // Production: mutate the existing map, then:
+        // Full-map write is not implemented. Never send only the keys you touched.
         // action(
         //   permission_level{get_self(), "active"_n},
         //   "atomicassets"_n, "setassetdata"_n,
         //   std::make_tuple(get_self(), asset_owner, asset_id, mdata)
         // ).send();
-        // Never construct a fresh map that contains only the keys you touched.
 
         (void)asset_id;
-        (void)new_level;
+        (void)next_durability;
+        (void)next_level;
+        (void)next_xp;
     }
 };

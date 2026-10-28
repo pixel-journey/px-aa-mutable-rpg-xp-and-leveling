@@ -1,27 +1,33 @@
+/** Attack notes that match invariants/mutable-xp.ts. Not a second implementation. */
 export const invariants = [
   {
     id: "partial-map-wipe",
-    attack: "Build a new ATTRIBUTE_MAP with only xp and pass it to setassetdata.",
-    expect: "Forbidden. Deserialize the stored blob, mutate, write the full map. A fixture with durability=40 must still report 40 after an XP write.",
+    attack: "Build a new map with only xp, level, and durability, and pass it to setassetdata.",
+    expect: "The nickname is gone. mergeMutable keeps every existing key. toAttributeMap refuses a type map that omits one.",
   },
   {
     id: "wrong-variant",
-    attack: "Schema says durability is uint16 and the editor does std::get<uint32_t>.",
-    expect: "holds_alternative<uint16_t> is false, so the action throws before the write.",
+    attack: "xp is stored as a string, or a numeric field is missing.",
+    expect: "requireUint32 throws before any addition. Do not coerce the string.",
   },
   {
     id: "durability-floor",
-    attack: "durability_cost greater than current durability.",
-    expect: "throws repair required. No write.",
+    attack: "Stored durability is 0, or a negative number.",
+    expect: "Throws. No write. The rule always subtracts 1 and does not take a caller-supplied cost.",
   },
   {
     id: "bounds",
-    attack: "xp_gained = 100001 or durability_cost = 101.",
-    expect: "throws. The caps are in questcomplete.",
+    attack: "Gain is 0, negative, not an integer, above 10000, or would push xp past uint32.",
+    expect: "Throws. The caps are in applyGain.",
   },
   {
     id: "unauthorized-editor",
-    attack: "Contract account is not on the collection authorized_accounts list.",
-    expect: "atomicassets rejects setassetdata. The reference file does not call it yet, so this vector is mandatory before mainnet.",
+    attack: "The caller is not the authorized editor, or previous was supplied by the caller instead of the asset row.",
+    expect: "Throws before an action body is built. atomicassets would also reject an editor who is not on the collection list. That list is not read here.",
+  },
+  {
+    id: "level-mismatch",
+    attack: "Stored level is not 1 + floor(xp / 100).",
+    expect: "Throws. The contract must not overwrite a corrupt pair as if it were consistent.",
   },
 ];
