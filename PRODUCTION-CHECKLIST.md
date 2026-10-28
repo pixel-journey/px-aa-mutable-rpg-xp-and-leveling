@@ -16,7 +16,7 @@ Before this pattern can be considered complete, the following must exist and mus
 
 - [x] Editor authorization (educational stand-in).
 - [x] Previous must come from the chain (educational stand-in).
-- [x] Gain 1–10000.
+- [x] Gain 1–10000 (negative, zero, and non-integer refused).
 - [x] Durability must not go below 0; always subtracts 1.
 - [x] Level must already match the formula.
 - [x] XP must stay inside uint32.
@@ -24,3 +24,5 @@ Before this pattern can be considered complete, the following must exist and mus
 - [x] New key is refused.
 
 The C++ sketch is uncompiled. Do not deploy it until the items above are present and a build has been verified.
+
+See PRODUCTION-SEQUENCE.md for the required order of operations.
