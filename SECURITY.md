@@ -34,4 +34,4 @@
 
 ## Current status
 
-The TypeScript rule exists and now includes both the editor authorization check and the requirement that previous state come from the chain. The AtomicAssets deserializer and the `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled and disagrees with the test in places. The test is the rule.
+The TypeScript rule exists and includes the editor authorization check and the requirement that previous state come from the chain. The C++ sketch now matches the tested rule on the gain cap and the fixed durability cost of 1. It still lacks the asset-row read, the AtomicAssets deserializer, the collection-editor list check, and the `setassetdata` call. The test is the rule until a deterministic build exists.
