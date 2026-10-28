@@ -33,7 +33,13 @@ export function wipedMap(updates: MutableMap): MutableMap {
   return { ...updates };
 }
 
-export function applyGain(previous: MutableMap, gain: number): MutableMap {
+export function applyGain(
+  caller: string,
+  authorizedEditor: string,
+  previous: MutableMap,
+  gain: number
+): MutableMap {
+  if (caller !== authorizedEditor) throw new Error("not authorized editor");
   if (!Number.isInteger(gain) || gain < 1 || gain > XP_GAIN_MAX) throw new Error("bad gain");
   const xp = uint32(previous.xp, "xp");
   const level = uint32(previous.level, "level");
