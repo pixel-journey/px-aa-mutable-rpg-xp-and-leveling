@@ -3,14 +3,19 @@ import test from "node:test";
 import { applyGain, expectedLevel, mergeMutable, wipedMap } from "./mutable-xp.ts";
 
 const row = { xp: 50, level: 1, durability: 10, nickname: "oak" };
+const editor = "collection.author";
 
-test("50 plus 50 keeps the nickname and reaches level 2", () => {
-  assert.deepEqual(applyGain(row, 50), {
+test("authorized editor: 50 plus 50 keeps the nickname and reaches level 2", () => {
+  assert.deepEqual(applyGain(editor, editor, row, 50), {
     xp: 100,
     level: 2,
     durability: 9,
     nickname: "oak",
   });
+});
+
+test("unauthorized caller is refused", () => {
+  assert.throws(() => applyGain("alice", editor, row, 50), /authorized editor/);
 });
 
 test("level is 1 plus xp divided by 100", () => {
@@ -20,21 +25,21 @@ test("level is 1 plus xp divided by 100", () => {
 });
 
 test("a broken item is refused and the row is not a partial map", () => {
-  assert.throws(() => applyGain({ ...row, durability: 0 }, 1), /broken/);
+  assert.throws(() => applyGain(editor, editor, { ...row, durability: 0 }, 1), /broken/);
 });
 
 test("a level that does not match xp is refused", () => {
-  assert.throws(() => applyGain({ ...row, level: 4 }, 1), /level mismatch/);
+  assert.throws(() => applyGain(editor, editor, { ...row, level: 4 }, 1), /level mismatch/);
 });
 
 test("gain above 10000 is refused", () => {
-  assert.throws(() => applyGain(row, 10001), /bad gain/);
-  assert.throws(() => applyGain(row, 0), /bad gain/);
+  assert.throws(() => applyGain(editor, editor, row, 10001), /bad gain/);
+  assert.throws(() => applyGain(editor, editor, row, 0), /bad gain/);
 });
 
 test("uint32 xp is refused at the cap", () => {
   const near = { xp: 0xffffffff - 5, level: expectedLevel(0xffffffff - 5), durability: 3, nickname: "oak" };
-  assert.throws(() => applyGain(near, 6), /xp cap/);
+  assert.throws(() => applyGain(editor, editor, near, 6), /xp cap/);
 });
 
 test("a partial map drops the nickname", () => {
