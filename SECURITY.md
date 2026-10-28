@@ -12,11 +12,12 @@
 - Gain must not push xp outside uint32.
 - Durability must not go negative.
 - Stored level must already match the formula derived from current xp; a mismatch is refused.
+- `xp`, `level`, and `durability` must already be uint32. A string, a float, a negative, or a missing value is refused before arithmetic.
 - A partial map (missing sibling keys) is a data-loss bug and must be refused by construction.
 
 ## State integrity
 
-`setassetdata` replaces the entire stored map. The only safe pattern is: read → deserialize → mutate selected keys → write the complete map.
+`setassetdata` replaces the entire stored map. The only safe pattern is: read → deserialize → confirm types → mutate selected keys → write the complete map.
 
 ## What the tested rule covers
 
@@ -27,11 +28,12 @@
 - Previous map that is not marked as coming from the chain is refused.
 - Broken (durability 0) is refused.
 - Level mismatch is refused.
-- Gain outside 1–10000 is refused.
+- Gain outside 1–10000 is refused, including negative and non-integer.
+- A string stored as xp is refused.
 - XP that would exceed uint32 is refused.
 - Partial map drops omitted keys; merge preserves them.
 - New key is refused.
 
 ## Current status
 
-The TypeScript rule exists and includes the editor authorization check and the requirement that previous state come from the chain. The C++ sketch now matches the tested rule on the gain cap and the fixed durability cost of 1. It still lacks the asset-row read, the AtomicAssets deserializer, the collection-editor list check, and the `setassetdata` call. The test is the rule until a deterministic build exists.
+The TypeScript rule exists and includes the editor check, the chain-sourced previous requirement, and the uint32 type check. The C++ sketch shows the production sequence as structure only. It still lacks the real AtomicAssets headers, the deserializer, and a deterministic build. The test is the rule until that build matches it.
