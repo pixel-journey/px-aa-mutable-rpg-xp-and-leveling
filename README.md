@@ -34,6 +34,7 @@ No host is called.
 - `WIPE-BUG.md` — why a partial map erases sibling keys.
 - `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
 - `COLLECTION-AUTH.md` — collection editor requirement.
+- `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
 
 ## Uncompiled sketch
 
