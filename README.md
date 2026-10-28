@@ -36,6 +36,7 @@ No host is called.
 - `COLLECTION-AUTH.md` — collection editor requirement.
 - `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
 - `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
+- `PRODUCTION-SEQUENCE.md` — required order of operations.
 - `PRODUCTION-CHECKLIST.md` — what must still be present before deployment.
 
 ## Uncompiled sketch
