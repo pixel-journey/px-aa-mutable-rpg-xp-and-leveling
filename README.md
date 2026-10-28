@@ -13,7 +13,7 @@ The tested rule is `invariants/mutable-xp.ts`.
 - Previous map that is not marked as coming from the chain is refused.
 - Level must already be `1 + floor(xp / 100)`. A mismatch is refused.
 - Durability 0 is refused. One gain subtracts 1.
-- Gain is an integer from 1 to 10000. Negative gain is refused. xp must stay inside uint32.
+- Gain is an integer from 1 to 10000. Negative or non-integer gain is refused. xp must stay inside uint32.
 - A map that contains only the changed keys does not contain `nickname`. That is the wipe.
 - A new key is refused.
 
@@ -35,6 +35,7 @@ No host is called.
 - `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
 - `COLLECTION-AUTH.md` — collection editor requirement.
 - `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
+- `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
 - `PRODUCTION-CHECKLIST.md` — what must still be present before deployment.
 
 ## Uncompiled sketch
