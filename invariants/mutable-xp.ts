@@ -9,7 +9,8 @@ export type ChainPrevious = {
   map: MutableMap;
 };
 
-function uint32(value: string | number, label: string): number {
+/** Educational stand-in for holds_alternative<uint32> before std::get. */
+export function requireUint32(value: string | number | undefined, label: string): number {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > UINT32_MAX) {
     throw new Error("bad " + label);
   }
@@ -47,9 +48,9 @@ export function applyGain(
   if (caller !== authorizedEditor) throw new Error("not authorized editor");
   if (previous.source !== "chain") throw new Error("previous must come from chain");
   if (!Number.isInteger(gain) || gain < 1 || gain > XP_GAIN_MAX) throw new Error("bad gain");
-  const xp = uint32(previous.map.xp, "xp");
-  const level = uint32(previous.map.level, "level");
-  const durability = uint32(previous.map.durability, "durability");
+  const xp = requireUint32(previous.map.xp, "xp");
+  const level = requireUint32(previous.map.level, "level");
+  const durability = requireUint32(previous.map.durability, "durability");
   if (level !== expectedLevel(xp)) throw new Error("level mismatch");
   if (durability < 1) throw new Error("broken");
   if (xp > UINT32_MAX - gain) throw new Error("xp cap");

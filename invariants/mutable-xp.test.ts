@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applyGain, expectedLevel, mergeMutable, wipedMap } from "./mutable-xp.ts";
+import { applyGain, expectedLevel, mergeMutable, requireUint32, wipedMap } from "./mutable-xp.ts";
 
 const row = { xp: 50, level: 1, durability: 10, nickname: "oak" };
 const editor = "collection.author";
@@ -51,6 +51,14 @@ test("negative gain is refused", () => {
 
 test("non-integer gain is refused", () => {
   assert.throws(() => applyGain(editor, editor, chain(row), 1.5), /bad gain/);
+});
+
+test("a string stored where a uint32 is required is refused", () => {
+  assert.throws(() => requireUint32("50", "xp"), /bad xp/);
+  assert.throws(
+    () => applyGain(editor, editor, chain({ ...row, xp: "50" as unknown as number }), 1),
+    /bad xp/
+  );
 });
 
 test("uint32 xp is refused at the cap", () => {
