@@ -6,21 +6,18 @@ Example of a safe mutable-data update for an AtomicAssets NFT before calling `se
 
 `setassetdata` replaces the entire stored mutable map with the map you supply. If you send only the keys you intend to change, every other key is erased. That is a silent data-loss bug. The tested rule demonstrates both the correct full-map result and the wipe that occurs with a partial map.
 
-## Authorization
+## Authorization and previous state
 
-On chain the caller must be authorized to edit the asset (typically the collection author or the asset owner with the appropriate secondary permission). This repository does not yet implement that check because it does not read the asset row. A production contract must:
+The tested rule refuses:
 
-- Read the asset from the `atomicassets` table.
-- Confirm the caller is allowed to edit it.
-- Deserialize the existing mutable data.
-- Mutate only the intended keys.
-- Write the complete map back.
+- A caller who is not the authorized editor.
+- A previous map that is not marked as coming from the chain.
 
-Never accept a caller-supplied previous map. The previous state must come from the chain.
+On a real contract the previous map must be read from the `atomicassets` asset row. Accepting a caller-supplied previous map lets an attacker forge xp or level. The `source: "chain"` marker in the rule is an educational stand-in for that read.
 
 ## Bounds and negative inputs
 
-The tested rule refuses:
+The tested rule also refuses:
 
 - A gain of 0 or a negative gain.
 - A gain large enough to push xp outside uint32.
