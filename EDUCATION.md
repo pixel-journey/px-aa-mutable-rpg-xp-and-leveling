@@ -30,9 +30,20 @@ These refusals exist so that a malicious or mistaken caller cannot wrap a counte
 
 See LEVEL-CONSISTENCY.md for the level check.
 
-## What is not yet done
+## What the sketch now shows
 
-The AtomicAssets deserializer and the actual `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled. The gain cap and the fixed durability cost of 1 now match the tested rule. The asset-row read, the deserializer, the collection-editor check, and the `setassetdata` call are still missing. The test is the rule until a deterministic build exists.
+`contracts/src/px_mutable_engine.cpp` is uncompiled. It now contains the structure of the full production sequence:
+
+- Authentication.
+- Collection editor check (commented placeholder).
+- Asset-row read (placeholder type).
+- Schema read (placeholder type).
+- Deserialize step (commented).
+- Level-consistency check (active code that matches the tested rule).
+- Gain application with the fixed durability cost of 1.
+- Full-map `setassetdata` call (commented).
+
+The real AtomicAssets headers are not vendored. A deterministic CDT build has not been run. The test is the rule until a build matches it.
 
 ## Attack surface to keep closed
 
