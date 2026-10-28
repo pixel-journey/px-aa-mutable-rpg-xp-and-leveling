@@ -3,59 +3,54 @@
 
 using namespace eosio;
 
-// Quest: px-aa-mutable-rpg-xp-and-leveling
+// Educational sketch for a safe AtomicAssets mutable update.
+// Tested rule: invariants/mutable-xp.ts (npm test).
+// This file has not been compiled. It disagrees with the test in places.
+// Do not deploy.
 //
-// Production code vendors atomicassets.hpp and atomicdata.hpp and calls
-// atomicdata::deserialize before setassetdata. This file keeps the state
-// machine readable without pinning a header snapshot. The wipe bug is the
-// point of the quest: a one-key map passed to setassetdata deletes every
-// other mutable field.
-
-struct attribute_map_note {
-    // Stand-in for atomicassets::ATTRIBUTE_MAP.
-    // Real code: std::map<std::string, std::variant<...>>
-};
-
+// The wipe bug this example exists to prevent:
+//   setassetdata replaces the entire stored map. A map that contains only
+//   the keys you changed erases every other key.
+//
+// Disagreements with the tested rule (the test wins until a build matches):
+//   - Sketch allows xp gain up to 100000; test refuses above 10000.
+//   - Sketch accepts a caller-supplied durability cost; test always subtracts 1.
+//   - Sketch derives level without checking that the stored level already matched.
+//   - Sketch does not yet check that the caller is an authorized editor of the collection.
 CONTRACT px_mutable_engine : public contract {
 public:
     using contract::contract;
 
     [[eosio::action]]
     void questcomplete(name asset_owner, uint64_t asset_id, uint32_t xp_gained, uint16_t durability_cost) {
+        // Authorization is incomplete. A production contract must also confirm
+        // the caller is an authorized editor for the collection.
         require_auth(asset_owner);
         check(xp_gained <= 100000, "xp gain out of bounds");
         check(durability_cost <= 100, "durability cost out of bounds");
 
-        // 1. assets table scoped by asset_owner.value on atomicassets
-        // 2. schemas table scoped by collection_name.value
-        // 3. ATTRIBUTE_MAP mdata = atomicdata::deserialize(mutable_serialized_data, format)
-        // 4. holds_alternative<T> before std::get<T>
-        // 5. write the FULL map back via setassetdata
+        // Production steps not yet written:
+        // 1. Read assets table scoped by asset_owner on atomicassets.
+        // 2. Read schemas table scoped by collection_name.
+        // 3. ATTRIBUTE_MAP mdata = atomicdata::deserialize(...).
+        // 4. holds_alternative<T> before std::get<T>.
+        // 5. Mutate only existing keys.
+        // 6. Write the FULL map back via setassetdata.
 
-        uint32_t current_xp = 0;       // get_or(mdata, "xp", 0)
-        uint16_t current_level = 1;    // get_or(mdata, "level", 1)
-        uint16_t durability = 100;     // get_or(mdata, "durability", 100)
+        uint32_t current_xp = 0;
+        uint16_t current_level = 1;
+        uint16_t durability = 100;
         check(durability >= durability_cost, "repair required");
 
         durability = static_cast<uint16_t>(durability - durability_cost);
         current_xp += xp_gained;
         uint16_t new_level = static_cast<uint16_t>(1 + (current_xp / 1000));
-        bool ascended = new_level >= 10 && new_level > current_level;
         current_level = new_level;
 
-        // mdata["xp"] = current_xp;
-        // mdata["level"] = current_level;
-        // mdata["durability"] = durability;
-        // if (ascended) mdata["aura_tier"] = "Ascended Pixel Glow";
-        // Never construct a fresh map with only the keys you touched.
         (void)asset_id;
-        (void)ascended;
+        (void)current_level;
 
-        // action(
-        //   permission_level{get_self(), "active"_n},
-        //   "atomicassets"_n, "setassetdata"_n,
-        //   std::make_tuple(get_self(), asset_owner, asset_id, mdata)
-        // ).send();
-        // get_self() must be in the collection's authorized_accounts.
+        // Never construct a fresh map with only the keys you touched.
+        // action(..., "atomicassets"_n, "setassetdata"_n, std::make_tuple(...)).send();
     }
 };
