@@ -27,6 +27,14 @@ npm test
 
 No host is called.
 
+## Educational notes
+
+- `EDUCATION.md` — overview.
+- `SECURITY.md` — authorization and bounds.
+- `WIPE-BUG.md` — why a partial map erases sibling keys.
+- `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
+- `COLLECTION-AUTH.md` — collection editor requirement.
+
 ## Uncompiled sketch
 
 `contracts/src/px_mutable_engine.cpp` is uncompiled. The gain cap and the fixed durability cost of 1 now match the tested rule. It still lacks the asset-row read, the deserializer, the collection-editor check, and the `setassetdata` call. The test is the rule. Do not treat the file as the integration.
