@@ -6,6 +6,8 @@ Example of a safe mutable-data update for an AtomicAssets NFT before calling `se
 
 `setassetdata` replaces the entire stored mutable map with the map you supply. If you send only the keys you intend to change, every other key is erased. That is a silent data-loss bug. The tested rule demonstrates both the correct full-map result and the wipe that occurs with a partial map.
 
+See WIPE-BUG.md for the short demonstration.
+
 ## Authorization and previous state
 
 The tested rule refuses:
@@ -26,9 +28,11 @@ The tested rule also refuses:
 
 These refusals exist so that a malicious or mistaken caller cannot wrap a counter, create an inconsistent level, or drive durability below zero.
 
+See LEVEL-CONSISTENCY.md for the level check.
+
 ## What is not yet done
 
-The AtomicAssets deserializer and the actual `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled and disagrees with the test in places. The test is the rule until a deterministic build exists.
+The AtomicAssets deserializer and the actual `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled. The gain cap and the fixed durability cost of 1 now match the tested rule. The asset-row read, the deserializer, the collection-editor check, and the `setassetdata` call are still missing. The test is the rule until a deterministic build exists.
 
 ## Attack surface to keep closed
 
