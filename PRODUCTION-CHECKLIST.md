@@ -4,13 +4,13 @@ Before this pattern can be considered complete, the following must exist and mus
 
 ## Must be present
 
-- [ ] Asset-row read from the `atomicassets` assets table.
-- [ ] Schema read so the format for deserialization is known.
-- [ ] `atomicdata::deserialize` of the mutable bytes.
-- [ ] Confirmation that the caller is on the collection's authorized-editor list (or holds the correct secondary permission).
-- [ ] Level-consistency check against the stored xp.
-- [ ] Full-map write via `setassetdata` (no partial map).
-- [ ] Deterministic CDT build that produces a wasm whose behavior matches `npm test`.
+- [ ] Asset-row read from the `atomicassets` assets table. (Structure shown in the sketch; real table not present.)
+- [ ] Schema read so the format for deserialization is known. (Structure shown; real schema table not present.)
+- [ ] `atomicdata::deserialize` of the mutable bytes. (Structure shown; headers not vendored.)
+- [ ] Confirmation that the caller is on the collection's authorized-editor list. (Structure shown; real list not read.)
+- [ ] Level-consistency check against the stored xp. (Present in the sketch.)
+- [ ] Full-map write via `setassetdata` (no partial map). (Structure shown; call not compiled.)
+- [ ] Deterministic CDT build that produces a wasm whose behavior matches `npm test`. (Not run.)
 
 ## Already covered by the tested rule
 
@@ -23,6 +23,6 @@ Before this pattern can be considered complete, the following must exist and mus
 - [x] Partial map is demonstrated as a wipe.
 - [x] New key is refused.
 
-The C++ sketch is uncompiled. Do not deploy it until the items above are present and a build has been verified.
+The C++ sketch now shows the structure of the remaining production steps. It has not been compiled. The real AtomicAssets headers are not vendored. Do not deploy it until a deterministic build has been verified.
 
 See PRODUCTION-SEQUENCE.md for the required order of operations.
