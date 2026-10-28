@@ -24,6 +24,7 @@
 
 - Authorized editor may apply a gain that keeps sibling keys.
 - Unauthorized caller is refused.
+- Previous map that is not marked as coming from the chain is refused.
 - Broken (durability 0) is refused.
 - Level mismatch is refused.
 - Gain outside 1–10000 is refused.
@@ -33,4 +34,4 @@
 
 ## Current status
 
-The TypeScript rule exists and now includes the editor authorization check. The AtomicAssets deserializer and the `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled and disagrees with the test in places. The test is the rule.
+The TypeScript rule exists and now includes both the editor authorization check and the requirement that previous state come from the chain. The AtomicAssets deserializer and the `setassetdata` inline action are not in this repository. The C++ sketch is uncompiled and disagrees with the test in places. The test is the rule.
