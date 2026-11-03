@@ -1,54 +1,110 @@
-# Education
+# Education — RPG XP on a full mutable map
 
-Example of a safe mutable-data update for an AtomicAssets NFT before calling `setassetdata`.
+> **Rung:** `npm test` passes. `contracts/src/px_mutable_engine.cpp` is an **uncompiled sketch**. Headers are not vendored. The unsigned `setassetdata` body is a client test, not a broadcast.  
+> **The test is the rule.**
 
-## Why the full map must be written
+`px-aa-mutable-safe-partial-updater` teaches "copy the map, then set one key." This repo adds the game rule on top: XP, level, durability, and a refusal to invent keys.
 
-`setassetdata` replaces the entire stored mutable map with the map you supply. If you send only the keys you intend to change, every other key is erased. That is a silent data-loss bug. The tested rule demonstrates both the correct full-map result and the wipe that occurs with a partial map.
+## What you should be able to do
 
-See WIPE-BUG.md for the short demonstration.
+| Level | After this file |
+| --- | --- |
+| Beginner | Add 50 XP to `{ xp: 50, level: 1, durability: 10, nickname: "oak" }` and keep the nickname |
+| Intermediate | Refuse a bad level, a string XP, a broken item, and a caller who is not the editor |
+| Masterclass | Explain why `source: "chain"` is still only a tag, and why a new key is refused here but not in the partial-updater lab |
 
-## Authorization and previous state
+---
 
-The tested rule refuses:
+## Beginner — one scene
 
-- A caller who is not the authorized editor.
-- A previous map that is not marked as coming from the chain.
+The row is `xp 50`, `level 1`, `durability 10`, `nickname "oak"`. The authorized editor is `collection.author`. Gain is 50.
 
-On a real contract the previous map must be read from the `atomicassets` asset row. Accepting a caller-supplied previous map lets an attacker forge xp or level. The `source: "chain"` marker in the rule is an educational stand-in for that read.
+```text
+expected level = 1 + floor(xp / 100)
+next xp        = 100
+next level     = 2
+durability     = 9
+nickname       = "oak"
+```
 
-## Bounds and negative inputs
+The test deep-equals that object.
 
-The tested rule also refuses:
+`expectedLevel(0)` and `expectedLevel(99)` are 1. `expectedLevel(100)` is 2.
 
-- A gain of 0 or a negative gain.
-- A gain large enough to push xp outside uint32.
-- A durability that would go negative.
-- A level that does not already match the formula derived from the current xp.
+A partial write `{ xp: 51, level: 1, durability: 9 }` does **not** contain `nickname`. `wipedMap` is that mistake, on purpose. `mergeMutable(row, { xp: 51 })` still has nickname `"oak"`.
 
-These refusals exist so that a malicious or mistaken caller cannot wrap a counter, create an inconsistent level, or drive durability below zero.
+### Words
 
-See LEVEL-CONSISTENCY.md for the level check.
+| Word | Meaning here |
+| --- | --- |
+| Chain previous | `{ source: "chain", map }`. Any other source string throws |
+| Editor | Must equal `authorizedEditor`. The test uses the collection author, not the NFT owner |
+| Gain | Integer 1..10000 |
+| `requireUint32` | Integer number, 0..`0xffffffff`. A string `"50"` throws `bad xp` |
+| New key | `mergeMutable` throws `new key` if the update names a key the previous map lacks |
 
-## What the sketch now shows
+### Predict, then run
 
-`contracts/src/px_mutable_engine.cpp` is uncompiled. It now contains the structure of the full production sequence:
+```bash
+npm test
+```
 
-- Authentication.
-- Collection editor check (commented placeholder).
-- Asset-row read (placeholder type).
-- Schema read (placeholder type).
-- Deserialize step (commented).
-- Level-consistency check (active code that matches the tested rule).
-- Gain application with the fixed durability cost of 1.
-- Full-map `setassetdata` call (commented).
+1. Caller `alice` throws `not authorized editor`.
+2. `source: "caller"` throws `previous must come from chain`.
+3. Durability 0 throws `broken`. Level 4 on 50 XP throws `level mismatch`.
+4. Gain 0, -1, 1.5, and 10001 throw `bad gain`.
 
-The real AtomicAssets headers are not vendored. A deterministic CDT build has not been run. The test is the rule until a build matches it.
+---
 
-## Attack surface to keep closed
+## Intermediate — order inside `applyGain`
 
-- Partial map writes (data wipe).
-- Caller-controlled previous state (forged xp/level).
-- Missing authorization on the editor.
-- Unchecked arithmetic on xp or durability.
-- Adding keys that the schema does not declare.
+1. Caller equals the authorized editor.
+2. `previous.source` is exactly `"chain"`.
+3. Gain is an integer from 1 to 10000.
+4. `xp`, `level`, and `durability` each pass `requireUint32`.
+5. Stored level equals `expectedLevel(xp)`. The row is not allowed to disagree with itself.
+6. Durability is at least 1.
+7. `xp + gain` does not pass `0xffffffff` (`xp cap`).
+8. `mergeMutable` overlays `xp`, `level`, and `durability` onto a copy. Nickname survives because it was copied and not replaced.
+
+The cap test uses `xp = 0xffffffff - 5` and gain 6. That is refused. The level on that row is `expectedLevel` of that xp, so the failure is the cap, not a level mismatch.
+
+`mergeMutable` of an empty update is a copy. The function refuses a key that was not already there. The partial-updater lab **allows** adding `aura`. This lab does not. Do not mix those two policies.
+
+### Attack → test
+
+| Attack | Naive code | This lab | Test |
+| --- | --- | --- | --- |
+| Write only xp, level, durability | Nickname wiped | merge keeps `oak` | `a partial map drops the nickname` plus the gain test |
+| Player calls the editor action | Anyone levels the NFT | `not authorized editor` | `unauthorized caller is refused` |
+| User supplies the "old" map | They skip the chain read | `previous must come from chain` | source tag test |
+| String in the uint32 slot | `std::get` on the wrong variant | `bad xp` | `a string stored where a uint32 is required` |
+| Level 4 while xp is 50 | Display and math diverge | `level mismatch` | `a level that does not match xp` |
+| Gain on durability 0 | Broken item still levels | `broken` | `a broken item is refused` |
+| Invent a `title` key | Schema drift | `new key` | `a new key is refused` |
+
+---
+
+## Masterclass — the tag is not a table read
+
+`source: "chain"` is a field the caller sets. The test passes `chain(row)` itself. A liar who sets the tag and also deletes `nickname` from `map` will get a merge that never had the nickname. The tag blocks the accidental `"caller"` path the test names. It does not fetch AtomicAssets.
+
+On chain the sequence is still: load the asset in the action, deserialize, `holds_alternative` before `std::get` (this file's `requireUint32` is the stand-in), edit, write the **full** map. Collection authority is not the same check as NFT owner. This lab's editor is `collection.author` on purpose. Copying the owner-only check from the partial-updater lab would make this collection action fail.
+
+`client/setassetdata-action.ts` builds an unsigned body. The client test checks that body. It does not send it.
+
+The sketch is not a CDT artifact. Neighbor notes in this repo (`WIPE-BUG.md`, `TYPE-CHECK.md`, `COLLECTION-AUTH.md`) are commentary. If they ever disagree with `invariants/mutable-xp.test.ts`, the test wins.
+
+### Exercise
+
+1. XP 99 plus a legal gain of 1, level was 1, durability 10. Derived next level? (`expectedLevel(100) === 2`. The exact `applyGain` call is not a separate test, but both pieces are.)
+2. Why does `wipedMap` exist if production must not call it? (So the test can show the bug. It is not the writer `applyGain` uses.)
+3. Who is authorized in the happy test, the owner or the collection author? (The string `collection.author`.)
+
+---
+
+## What this course will not teach
+
+- A live `setassetdata`
+- That `source: "chain"` proves a table read
+- That this merge policy (no new keys) is the partial-updater policy (it is not)
