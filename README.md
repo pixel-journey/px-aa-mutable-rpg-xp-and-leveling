@@ -9,9 +9,13 @@ The tested rule is `invariants/mutable-xp.ts`. The unsigned action body is `clie
 
 Ground truth for the action: [contract source](https://github.com/pinknetworkx/atomicassets-contract) and [WAX mutable-data tutorial](https://docs.wax.io/build/tutorials/howto_atomicassets/mutabledata). `setassetdata` stores a **full** serialized map. A partial map is a wipe of every omitted key.
 
+## Composition note
+
+`mutable-xp.composition.test.ts` walks multi-gain lifecycle: nickname survives sequential gains, level tracks XP, durability drains to **broken**, partial wipe drops nickname while merge does not, and a failed unauthorized attempt leaves the prior map valid for retry.
+
 ## What is true
 
-`npm test` runs both files. 19 tests passed on 2026-10-28.
+`npm test` runs unit + composition + client tests.
 
 - Authorized editor: xp 50, level 1, durability 10, nickname oak, gain 50 → xp 100, level 2, durability 9, nickname oak.
 - That result is the `setassetdata` attribute array, sorted by key, with uint32 and string types. There is no signature on the object.
