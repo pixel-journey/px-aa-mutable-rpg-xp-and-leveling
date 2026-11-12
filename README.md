@@ -1,8 +1,13 @@
 # px-aa-mutable-rpg-xp-and-leveling
 
-The mutate step before `atomicassets::setassetdata`. Private. Not deployed. The chain was not written.
+> **Stack:** layer 5 of 5 — [MUTABLE-STACK.md](https://github.com/pixel-journey/px-contract-examples-vault/blob/main/docs/MUTABLE-STACK.md)  
+> **Sources:** [SOURCES.md](SOURCES.md)
+
+The **mutate** step before `atomicassets::setassetdata`. Private. Not deployed. The chain was not written.
 
 The tested rule is `invariants/mutable-xp.ts`. The unsigned action body is `client/setassetdata-action.ts`. It calls that same rule. It does not read the chain and it does not broadcast.
+
+Ground truth for the action: [contract source](https://github.com/pinknetworkx/atomicassets-contract) and [WAX mutable-data tutorial](https://docs.wax.io/build/tutorials/howto_atomicassets/mutabledata). `setassetdata` stores a **full** serialized map. A partial map is a wipe of every omitted key.
 
 ## What is true
 
@@ -37,12 +42,22 @@ No host is called.
 - `WIPE-BUG.md` — why a partial map erases sibling keys.
 - `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
 - `TYPE-CHECK.md` — why a string must not be read as a uint32.
-- `COLLECTION-AUTH.md` — collection editor requirement.
+- `COLLECTION-AUTH.md` — collection editor requirement (see also live `check_has_collection_auth` in the contract).
 - `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
 - `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
 - `PRODUCTION-SEQUENCE.md` — required order of operations.
 - `PRODUCTION-CHECKLIST.md` — what must still be present before deployment.
 - `PLACEHOLDERS.md` — why the sketch uses placeholder types.
+- `SOURCES.md` — official contract and docs.wax.io links.
+
+## Earlier layers
+
+| Layer | Repo |
+| --- | --- |
+| 1 | [px-aa-mutable-deserialize-core](https://github.com/pixel-journey/px-aa-mutable-deserialize-core) |
+| 2 | [px-aa-mutable-safe-partial-updater](https://github.com/pixel-journey/px-aa-mutable-safe-partial-updater) |
+| 3 | [px-aa-mutable-all-primitive-types](https://github.com/pixel-journey/px-aa-mutable-all-primitive-types) |
+| 4 | [px-aa-mutable-vector-arrays-crud](https://github.com/pixel-journey/px-aa-mutable-vector-arrays-crud) |
 
 ## Uncompiled sketch
 
