@@ -1,35 +1,29 @@
-# px-aa-mutable-rpg-xp-and-leveling
+# RPG mutables: XP, level, durability without wiping the map
 
 > **Stack:** layer 5 of 5 — [MUTABLE-STACK.md](https://github.com/pixel-journey/px-contract-examples-vault/blob/main/docs/MUTABLE-STACK.md)  
 > **Sources:** [SOURCES.md](SOURCES.md)
 
-The **mutate** step before `atomicassets::setassetdata`. Private. Not deployed. The chain was not written.
+**Goal:** The **mutate** step before `atomicassets::setassetdata` for an RPG-style asset: authorized gain updates XP and level together, decrements durability, and keeps every sibling key (including nickname).
 
-The tested rule is `invariants/mutable-xp.ts`. The unsigned action body is `client/setassetdata-action.ts`. It calls that same rule. It does not read the chain and it does not broadcast.
+**Code under test:** `invariants/mutable-xp.ts` plus `client/setassetdata-action.ts` (unsigned action body). `npm test` runs unit, composition, and client tests. This repository does not read live tables or broadcast.
 
-Ground truth for the action: [contract source](https://github.com/pinknetworkx/atomicassets-contract) and [WAX mutable-data tutorial](https://docs.wax.io/build/tutorials/howto_atomicassets/mutabledata). `setassetdata` stores a **full** serialized map. A partial map is a wipe of every omitted key.
+**Ground truth:** [atomicassets-contract](https://github.com/pinknetworkx/atomicassets-contract), [WAX mutable-data tutorial](https://docs.wax.io/build/tutorials/howto_atomicassets/mutabledata). `setassetdata` stores a **full** serialized map — a partial map wipes every omitted key.
 
-## Composition note
+## Composition
 
-`mutable-xp.composition.test.ts` walks multi-gain lifecycle: nickname survives sequential gains, level tracks XP, durability drains to **broken**, partial wipe drops nickname while merge does not, and a failed unauthorized attempt leaves the prior map valid for retry.
+`mutable-xp.composition.test.ts` walks a multi-gain lifecycle: nickname survives sequential gains, level tracks XP, durability drains to **broken**, partial wipe drops nickname while merge does not, and a failed unauthorized attempt leaves the prior map valid for retry.
 
-## What is true
-
-`npm test` runs unit + composition + client tests.
+## What is true (executed)
 
 - Authorized editor: xp 50, level 1, durability 10, nickname oak, gain 50 → xp 100, level 2, durability 9, nickname oak.
-- That result is the `setassetdata` attribute array, sorted by key, with uint32 and string types. There is no signature on the object.
 - Unauthorized caller is refused before an action is built.
-- Previous map that is not marked as coming from the chain is refused. The client will not stamp `source: "chain"` for you.
-- Level must already be `1 + floor(xp / 100)`. A mismatch is refused.
-- Durability 0 is refused. One gain subtracts 1. There is no caller-supplied durability cost.
-- Gain is an integer from 1 to 10000. Negative or non-integer gain is refused. xp must stay inside uint32.
-- A string stored where `xp`, `level`, or `durability` must be a uint32 is refused before arithmetic.
-- A map that contains only the changed keys does not contain `nickname`. That is the wipe.
-- A type map or a stored map that drops `nickname` is refused.
-- A new key is refused. Asset id `0` is refused.
+- Previous map must be marked chain-sourced (`source: "chain"` stand-in for the asset-row read).
+- Level must already equal `1 + floor(xp / 100)`.
+- Durability 0 is refused; each gain subtracts 1.
+- Gain is an integer from 1 to 10000; xp stays inside uint32.
+- A map that contains only the changed keys does not contain `nickname` — that is the wipe.
 
-On a contract the previous map must come from the asset row, not from the caller. That read and the AtomicAssets deserializer are not in this repository. The `source: "chain"` marker is an educational stand-in for the read. `requireUint32` is the stand-in for `holds_alternative` before `std::get`.
+On a production contract the previous map must come from the asset row. The deserializer and collection-editor list are documented in the companion notes below; they are not simulated as live RPC here.
 
 ## Run
 
@@ -37,22 +31,20 @@ On a contract the previous map must come from the asset row, not from the caller
 npm test
 ```
 
-No host is called.
+## Companion notes
 
-## Educational notes
-
-- `EDUCATION.md` — overview.
-- `SECURITY.md` — authorization and bounds.
-- `WIPE-BUG.md` — why a partial map erases sibling keys.
-- `LEVEL-CONSISTENCY.md` — why the stored level must already match the formula.
-- `TYPE-CHECK.md` — why a string must not be read as a uint32.
-- `COLLECTION-AUTH.md` — collection editor requirement (see also live `check_has_collection_auth` in the contract).
-- `SECONDARY-PERMISSION.md` — why `require_auth(asset_owner)` is not sufficient.
-- `DESERIALIZER.md` — why the mutable bytes must be deserialized before mutation.
-- `PRODUCTION-SEQUENCE.md` — required order of operations.
-- `PRODUCTION-CHECKLIST.md` — what must still be present before deployment.
-- `PLACEHOLDERS.md` — why the sketch uses placeholder types.
-- `SOURCES.md` — official contract and docs.wax.io links.
+| Doc | Topic |
+| --- | --- |
+| `EDUCATION.md` | Overview |
+| `SECURITY.md` | Authorization and bounds |
+| `WIPE-BUG.md` | Why partial maps erase siblings |
+| `LEVEL-CONSISTENCY.md` | Why stored level must match the formula |
+| `TYPE-CHECK.md` | Why a string is not a uint32 |
+| `COLLECTION-AUTH.md` | Collection editor requirement |
+| `SECONDARY-PERMISSION.md` | Why owner auth alone is insufficient |
+| `DESERIALIZER.md` | Why bytes must be deserialized before mutation |
+| `PRODUCTION-SEQUENCE.md` / `PRODUCTION-CHECKLIST.md` | Deployment order |
+| `SOURCES.md` | Official links |
 
 ## Earlier layers
 
@@ -63,6 +55,8 @@ No host is called.
 | 3 | [px-aa-mutable-all-primitive-types](https://github.com/pixel-journey/px-aa-mutable-all-primitive-types) |
 | 4 | [px-aa-mutable-vector-arrays-crud](https://github.com/pixel-journey/px-aa-mutable-vector-arrays-crud) |
 
-## Uncompiled sketch
+## C++ sketch scope
 
-`contracts/src/px_mutable_engine.cpp` is uncompiled. The numeric checks use uint32, matching the tested rule, and there is no durability-cost argument. The asset-row read, the deserializer, the collection-editor list, and the `setassetdata` send are still comments. Placeholder zeros are not a chain read. The real AtomicAssets headers are not vendored. A deterministic CDT build has not been run. The test is the rule. Do not treat the file as the integration.
+`contracts/src/px_mutable_engine.cpp` mirrors the numeric checks in uint32 form. Asset-row read, deserializer, collection-editor list, and `setassetdata` send remain documented stubs until AtomicAssets headers are vendored and compiled through [wax-contract-compiler](https://github.com/pixel-journey/wax-contract-compiler). The TypeScript tests are the executable rule of this repository.
+
+MIT — Pixel Journey
