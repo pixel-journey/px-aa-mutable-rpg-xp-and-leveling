@@ -1,43 +1,55 @@
 # Worked examples — RPG mutable gain
 
-Constants: `XP_PER_LEVEL = 100`, `XP_GAIN_MAX = 10000`.
+`XP_PER_LEVEL = 100`, `XP_GAIN_MAX = 10000`. Editor under test `collection.author`. Previous map must be `source: "chain"`.
 
-## Example A — level up with nickname preserved
+## Level table
+
+| xp | expectedLevel |
+| --- | --- |
+| 0 | 1 |
+| 99 | 1 |
+| 100 | 2 |
+
+## Single gain
 
 ```text
-previous (chain): { xp: 50, level: 1, durability: 10, nickname: "oak" }
-applyGain(authorized, gain: 50)
+{ xp: 50, level: 1, durability: 10, nickname: "oak" }
++ gain 50
 → { xp: 100, level: 2, durability: 9, nickname: "oak" }
 ```
 
-## Example B — sequential gains (composition)
+Each successful gain subtracts **exactly one** durability.
 
-Multiple gains: nickname always present, level always `1 + floor(xp/100)`, durability decreases by 1 each time until **broken** (durability 0 refuses further gains).
+## Composition — three gains
 
-## Example C — wipe vs merge
+Start `{ xp: 0, level: 1, durability: 5, nickname: "oak" }`:
 
-```text
-wipedMap({ xp: 100, level: 2 })  // missing nickname → wipe
-mergeMutable(previous, { xp, level, durability })  // siblings kept
-```
+| Gain | xp | level | durability | nickname |
+| --- | --- | --- | --- | --- |
+| +40 | 40 | 1 | 4 | oak |
+| +60 | 100 | 2 | 3 | oak |
+| +50 | 150 | 2 | 2 | oak |
 
-## Example D — refused paths
+## Broken
+
+Start durability 2, nickname pine: two gains → durability **0**; third throws `broken`; nickname still pine.
+
+## Wipe vs merge
+
+`wipedMap({ xp, level, durability })` **drops** nickname. `mergeMutable` / `applyGain` keep it. `mergeMutable` refuses a **new key** such as `title`.
+
+## Refusals
 
 | Case | Error |
 | --- | --- |
-| caller ≠ authorizedEditor | not authorized editor |
-| previous.source ≠ "chain" | previous must come from chain |
-| level ≠ expectedLevel(xp) | level mismatch |
-| durability < 1 | broken |
-| gain out of 1..10000 | bad gain |
-| xp + gain > uint32 max | xp cap |
-| update introduces new key | new key |
-| string where uint32 required | bad xp/level/durability |
+| caller alice | authorized editor |
+| previous.source caller | chain |
+| level 4 with xp 50 | level mismatch |
+| gain 0 / 10001 / -1 / 1.5 | bad gain |
+| gain 10000 | accepted |
+| xp near uint32 max + overflow | xp cap |
+| string xp | bad xp |
 
-## Example E — unauthorized does not mutate
+Failed unauthorized call leaves prior map valid for a correct retry (composition).
 
-Failed `applyGain` leaves the prior map valid for a correct retry (composition).
-
-## Example F — unsigned client body
-
-`client/setassetdata-action.ts` builds an **unsigned** `setassetdata` shape from the merged map. It does not broadcast.
+Unsigned `setassetdata` body in `client/` does not broadcast.
