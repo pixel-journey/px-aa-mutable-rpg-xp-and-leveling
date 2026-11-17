@@ -1,42 +1,41 @@
-# Security notes — AtomicAssets mutable update
+# Security — RPG XP on a full mutable map
 
-## Authorization
+## Closed in tests
 
-- The caller must be authorized to edit the asset (collection author or asset owner with the correct secondary permission).
-- Previous mutable state must be read from the `atomicassets` asset row. Never accept a caller-supplied previous map.
-- Do not stamp `source: "chain"` inside the client. That marker is only honest after a real asset-row read.
-- The contract must not write a map that adds keys the schema does not declare, or that drops a key the schema requires.
+| Issue | Behavior |
+| --- | --- |
+| Unauthorized caller | refused before body is built |
+| Previous not marked chain | refused |
+| Durability 0 | broken |
+| Level ≠ `1 + floor(xp / 100)` | level mismatch |
+| Gain outside 1–10000 / non-integer | refused |
+| String where uint32 required | bad xp |
+| XP past uint32 | refused |
+| Partial map omitting nickname | demonstrated wipe; merge preserves siblings |
+| New key not in previous map | refused |
+| Asset id 0 | refused |
 
-## Inputs and bounds
+Authorized editor may apply a gain that keeps sibling keys, including in the unsigned `setassetdata` body.
 
-- XP gain must be a positive integer from 1 to 10000.
-- Gain must not push xp outside uint32.
-- Durability must not go negative. The cost is fixed at 1. A caller-supplied cost is not part of this rule.
-- Stored level must already match the formula derived from current xp; a mismatch is refused.
-- `xp`, `level`, and `durability` must already be uint32. A string, a float, a negative, or a missing value is refused before arithmetic.
-- Asset id `0` is refused. Account names must be Antelope names.
-- A partial map (missing sibling keys) is a data-loss bug and must be refused by construction.
+## Not closed (production)
 
-## State integrity
+| Concern | Guidance |
+| --- | --- |
+| Auth | Collection author / authorized editors — real `require_auth`, not a string |
+| Previous map | Load from AtomicAssets asset row inside the action |
+| Schema | Do not invent keys the schema does not declare |
+| Type check | `holds_alternative` before `std::get` |
+| Write | Full map only — `setassetdata` replaces the whole map |
+| Wasm | C++ sketch is uncompiled; headers not vendored |
 
-`setassetdata` replaces the entire stored map. The only safe pattern is: read → deserialize → confirm types → mutate selected keys → write the complete map.
+## Attack angles
 
-## What the tested rule covers
+1. Sending only `{ xp, level, durability }` (nickname dies).  
+2. Client-supplied previous map stamped `source: "chain"`.  
+3. Owner-only auth when the collection must level the NFT.  
+4. Storing XP as a string and later `std::get` a uint32.  
+5. Mixing this lab's **no new keys** policy with the partial-updater's **allow add** policy.
 
-`npm test` runs `invariants/mutable-xp.test.ts` and `client/setassetdata-action.test.ts`.
+## Honesty limits
 
-- Authorized editor may apply a gain that keeps sibling keys, including in the unsigned `setassetdata` body.
-- Unauthorized caller is refused before that body is built.
-- Previous map that is not marked as coming from the chain is refused.
-- Broken (durability 0) is refused.
-- Level mismatch is refused.
-- Gain outside 1–10000 is refused, including negative and non-integer.
-- A string stored as xp is refused.
-- XP that would exceed uint32 is refused.
-- Partial map drops omitted keys; merge preserves them.
-- A type map or stored map that drops nickname is refused.
-- New key is refused. Asset id 0 is refused.
-
-## Current status
-
-The TypeScript rule and the unsigned action body agree. The C++ sketch uses uint32 and no durability-cost argument, but the asset read, deserializer, editor list, and `setassetdata` send are still comments. Headers are not vendored. No wasm has been built. The test is the rule until that build matches it.
+`source: "chain"` is a tag the test sets — not a table read. Companion notes (WIPE-BUG, COLLECTION-AUTH, …) yield to `npm test` if they disagree. Official: [atomicassets-contract](https://github.com/pinknetworkx/atomicassets-contract) · [mutable data](https://docs.wax.io/build/tutorials/howto_atomicassets/mutabledata). Stack: [MUTABLE-STACK](https://github.com/pixel-journey/px-contract-examples-vault/blob/main/docs/MUTABLE-STACK.md).
