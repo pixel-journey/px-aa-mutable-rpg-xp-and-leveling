@@ -8,6 +8,11 @@ Use this file when an agent extends or integrates this lab. Prefer facts locked 
 # WharfKit skill for Claude Code (SessionKit, ContractKit, patterns)
 git clone https://github.com/wharfkit/skill.git ~/.claude/skills/wharfkit
 
+# AtomicAssets skills (not MCP): pin a commit, start at AGENTS.md
+# https://github.com/atomicassets/atomic-knowledge
+#   skills/atomic-integration  → network before action, mint order
+#   skills/report              → sanitized gap report into *your* project
+
 # Optional: typed contract helpers
 npx @wharfkit/cli generate atomicassets
 ```
@@ -25,13 +30,14 @@ Packages hosts usually need later (not required for pure map tests):
 4. **Chain previous** — production must load asset row on-contract; never trust client `previous`.
 5. **Collection auth** for game XP — not owner-only ([COLLECTION-AUTH.md](COLLECTION-AUTH.md)).
 6. Prefer **WharfKit SessionKit** over legacy eosjs / Anchor Link defaults.
+7. Full-map replace ports; WAX mainnet vs testnet **ABI version** does not copy itself. Confirm with `get_abi`.
 
 ## Stack order
 
-1. [deserialize-core](https://github.com/pixel-journey/px-aa-mutable-deserialize-core)  
-2. [safe-partial-updater](https://github.com/pixel-journey/px-aa-mutable-safe-partial-updater)  
-3. [all-primitive-types](https://github.com/pixel-journey/px-aa-mutable-all-primitive-types)  
-4. [vector-arrays-crud](https://github.com/pixel-journey/px-aa-mutable-vector-arrays-crud)  
+1. [deserialize-core](https://github.com/pixel-journey/px-aa-mutable-deserialize-core)
+2. [safe-partial-updater](https://github.com/pixel-journey/px-aa-mutable-safe-partial-updater)
+3. [all-primitive-types](https://github.com/pixel-journey/px-aa-mutable-all-primitive-types)
+4. [vector-arrays-crud](https://github.com/pixel-journey/px-aa-mutable-vector-arrays-crud)
 5. **this lab**
 
 Index: [MUTABLE-STACK.md](https://github.com/pixel-journey/px-contract-examples-vault/blob/main/docs/MUTABLE-STACK.md)
@@ -42,9 +48,11 @@ Index: [MUTABLE-STACK.md](https://github.com/pixel-journey/px-contract-examples-
 - "Show a full-map patch that updates XP and preserves nickname using safe-partial patterns."
 - "List setassetdata args from docs.wax.io; mark which of our pure functions map to which step."
 - "Do not call this lab a live chain write. Draft a host integration checklist using WharfKit SessionKit only."
+- "Install atomic-integration and state which network you would target before any setassetdata."
 
 ## Do not
 
 - Open a new micro-repo for one scalar rule.
 - Claim `backasset` works on AtomicAssets v2 for new locks.
 - Put private keys or project decrypt keys in client prompts.
+- Conflate this stack with Alcor Bridge or `orng.wax`.
